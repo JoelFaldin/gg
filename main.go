@@ -7,14 +7,14 @@ import (
 )
 
 func main() {
-	addr := net.UDPAddr{Port: 5454}
+	addr := net.UDPAddr{Port: 8053}
 	conn, err := net.ListenUDP("udp", &addr)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer conn.Close()
 
-	log.Printf("DNS server listening on :%d\n", 5454)
+	log.Printf("DNS server listening on :%d\n", 8053)
 
 	sv := server.StartServer(conn)
 	sv.Run()

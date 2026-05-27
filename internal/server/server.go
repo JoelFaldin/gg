@@ -1,6 +1,11 @@
 package server
 
-import "net"
+import (
+	"fmt"
+	"gg/internal/parser"
+	"log"
+	"net"
+)
 
 type Server struct {
 	conn *net.UDPConn
@@ -21,10 +26,17 @@ func (s *Server) Run() {
 		}
 
 		// Pass buf[:n], only used bytes
-		go s.handle(buf[:n], addr)
+		go s.handle(buf[:n], addr, s.conn)
 	}
 }
 
-func (s *Server) handle(buf []byte, addr *net.UDPAddr) {
+func (s *Server) handle(buf []byte, addr *net.UDPAddr, conn *net.UDPConn) {
+	msg, err := parser.ParseMessage(buf)
+	if err != nil {
+		log.Println("parse error:", err)
+	}
 
+	fmt.Println(msg)
+
+	conn.WriteToUDP([]byte("ok"), addr)
 }
