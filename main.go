@@ -1,6 +1,7 @@
 package main
 
 import (
+	"gg/internal/server"
 	"log"
 	"net"
 )
@@ -14,4 +15,7 @@ func main() {
 	defer conn.Close()
 
 	log.Printf("DNS server listening on :%d\n", 5454)
+
+	sv := server.StartServer(conn)
+	sv.Run()
 }
