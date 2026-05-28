@@ -1,6 +1,7 @@
 package server
 
 import (
+	"fmt"
 	"gg/internal/parser"
 	"log"
 	"net"
@@ -23,6 +24,13 @@ func (s *Server) Run() {
 		if err != nil {
 			continue
 		}
+
+		if n < 12 {
+			fmt.Printf("paquete mal formateado o muy corto recibido desde %s\n", addr)
+			continue
+		}
+
+		fmt.Printf("bytes enviados: %d\n", n)
 
 		// Pass buf[:n], only used bytes
 		go s.handle(buf[:n], addr, s.conn)
