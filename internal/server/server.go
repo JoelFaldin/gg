@@ -2,17 +2,19 @@ package server
 
 import (
 	"fmt"
+	"gg/internal/model"
 	"gg/internal/parser"
 	"log"
 	"net"
 )
 
 type Server struct {
-	conn *net.UDPConn
+	conn  *net.UDPConn
+	store *model.Store
 }
 
-func StartServer(conn *net.UDPConn) *Server {
-	return &Server{conn: conn}
+func StartServer(conn *net.UDPConn, store *model.Store) *Server {
+	return &Server{conn: conn, store: store}
 }
 
 // Execute the core loop of the server. Read incoming request into a 512-sized slice
@@ -33,12 +35,12 @@ func (s *Server) Run() {
 		fmt.Printf("bytes enviados: %d\n", n)
 
 		// Pass buf[:n], only used bytes
-		go s.handle(buf[:n], addr, s.conn)
+		go s.handle(buf[:n], addr, s.conn, s.store)
 	}
 }
 
-func (s *Server) handle(buf []byte, addr *net.UDPAddr, conn *net.UDPConn) {
-	_, err := parser.ParseMessage(buf)
+func (s *Server) handle(buf []byte, addr *net.UDPAddr, conn *net.UDPConn, store *model.Store) {
+	_, err := parser.ParseMessage(buf, store)
 	if err != nil {
 		log.Println("parse error:", err)
 	}

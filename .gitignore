@@ -3,3 +3,6 @@
 
 # Ignore logs:
 *.log
+
+# YAML file:
+*.yaml

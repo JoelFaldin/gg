@@ -2,6 +2,7 @@ package main
 
 import (
 	"gg/internal/server"
+	"gg/internal/store"
 	"log"
 	"net"
 )
@@ -16,6 +17,13 @@ func main() {
 
 	log.Printf("DNS server listening on :%d\n", 8053)
 
-	sv := server.StartServer(conn)
+	config, err := store.LoadConfig("data.yaml")
+	if err != nil {
+		log.Fatalf("couldnt load data.yaml: %v", err)
+	}
+
+	store := store.NewsStore(config)
+
+	sv := server.StartServer(conn, store)
 	sv.Run()
 }

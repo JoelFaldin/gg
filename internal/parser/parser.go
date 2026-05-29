@@ -3,6 +3,7 @@ package parser
 import (
 	"encoding/binary"
 	"fmt"
+	"gg/internal/model"
 	"strings"
 )
 
@@ -24,7 +25,7 @@ type Question struct {
 	QClass  uint16
 }
 
-func ParseMessage(data []byte) (string, error) {
+func ParseMessage(data []byte, store *model.Store) (string, error) {
 	parseHeader(data[:12])
 	parseBody(data[12:])
 
@@ -44,9 +45,9 @@ func parseHeader(header []byte) Header {
 
 func parseBody(body []byte) {
 	// Classic question section:
-	fmt.Println("----------")
-	fmt.Println("full body:", body)
-	fmt.Println("----------")
+	// fmt.Println("----------")
+	// fmt.Println("full body:", body)
+	// fmt.Println("----------")
 
 	var str []string
 	pointer := 0
@@ -66,5 +67,11 @@ func parseBody(body []byte) {
 	}
 
 	domain := strings.Join(str, ".")
+
+	qtype := []byte{body[pointer+1], body[pointer+2]}
+	qclass := []byte{body[pointer+3], body[pointer+4]}
+
 	fmt.Println(domain)
+	fmt.Println(qtype)
+	fmt.Println(qclass)
 }
