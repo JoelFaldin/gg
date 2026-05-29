@@ -3,6 +3,7 @@ package parser
 import (
 	"encoding/binary"
 	"fmt"
+	"strings"
 )
 
 type Header struct {
@@ -16,10 +17,11 @@ type Header struct {
 
 type Question struct {
 	QLen    uint16
-	QName   uint16
+	QName   string
 	QExtLen uint16
-	QExt    uint16
-	TTL     uint16
+	QExt    string
+	QType   uint16
+	QClass  uint16
 }
 
 func ParseMessage(data []byte) (string, error) {
@@ -41,18 +43,28 @@ func parseHeader(header []byte) Header {
 }
 
 func parseBody(body []byte) {
+	// Classic question section:
 	fmt.Println("----------")
 	fmt.Println("full body:", body)
 	fmt.Println("----------")
 
-	domain_len := body[0]
-	domain := body[1 : domain_len+1]
+	var str []string
+	pointer := 0
+	for {
+		length := int(body[pointer])
 
-	start_len := len(domain) + 1
-	ext_len := body[len(domain)+1]
+		if length == 0 {
+			break
+		}
 
-	extension := body[start_len+1 : start_len+int(ext_len)+1]
+		start := pointer + 1
+		end := start + length
+		piece := string(body[start:end])
 
-	fmt.Println("domain:", domain)
-	fmt.Println("extension:", extension)
+		str = append(str, piece)
+		pointer = end
+	}
+
+	domain := strings.Join(str, ".")
+	fmt.Println(domain)
 }
