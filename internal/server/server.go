@@ -2,18 +2,18 @@ package server
 
 import (
 	"fmt"
-	"gg/internal/model"
 	"gg/internal/parser"
+	"gg/internal/store"
 	"log"
 	"net"
 )
 
 type Server struct {
 	conn  *net.UDPConn
-	store *model.Store
+	store *store.Store
 }
 
-func StartServer(conn *net.UDPConn, store *model.Store) *Server {
+func StartServer(conn *net.UDPConn, store *store.Store) *Server {
 	return &Server{conn: conn, store: store}
 }
 
@@ -39,7 +39,7 @@ func (s *Server) Run() {
 	}
 }
 
-func (s *Server) handle(buf []byte, addr *net.UDPAddr, conn *net.UDPConn, store *model.Store) {
+func (s *Server) handle(buf []byte, addr *net.UDPAddr, conn *net.UDPConn, store *store.Store) {
 	_, err := parser.ParseMessage(buf, store)
 	if err != nil {
 		log.Println("parse error:", err)

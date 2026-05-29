@@ -7,7 +7,3 @@ type Address struct {
 type Data struct {
 	Storage map[string]Address `yaml:"storage"`
 }
-
-type Store struct {
-	Data map[string]Address
-}

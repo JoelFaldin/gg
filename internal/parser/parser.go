@@ -3,7 +3,7 @@ package parser
 import (
 	"encoding/binary"
 	"fmt"
-	"gg/internal/model"
+	"gg/internal/store"
 	"strings"
 )
 
@@ -17,17 +17,21 @@ type Header struct {
 }
 
 type Question struct {
-	QLen    uint16
-	QName   string
-	QExtLen uint16
-	QExt    string
-	QType   uint16
-	QClass  uint16
+	QName  string
+	QType  uint16
+	QClass uint16
 }
 
-func ParseMessage(data []byte, store *model.Store) (string, error) {
+func ParseMessage(data []byte, store *store.Store) (string, error) {
 	parseHeader(data[:12])
-	parseBody(data[12:])
+	q := parseBody(data[12:])
+
+	ip, err := store.BuscarIP(q.QName)
+	if err != nil {
+		return "", err
+	}
+
+	fmt.Printf("client searches %s -> IP in yaml: %s\n", q.QName, ip)
 
 	return "", nil
 }
@@ -43,7 +47,7 @@ func parseHeader(header []byte) Header {
 	}
 }
 
-func parseBody(body []byte) {
+func parseBody(body []byte) Question {
 	// Classic question section:
 	// fmt.Println("----------")
 	// fmt.Println("full body:", body)
@@ -71,7 +75,13 @@ func parseBody(body []byte) {
 	qtype := []byte{body[pointer+1], body[pointer+2]}
 	qclass := []byte{body[pointer+3], body[pointer+4]}
 
-	fmt.Println(domain)
-	fmt.Println(qtype)
-	fmt.Println(qclass)
+	// fmt.Println(domain)
+	// fmt.Println(qtype)
+	// fmt.Println(qclass)
+
+	return Question{
+		QName:  domain,
+		QType:  binary.BigEndian.Uint16(qtype),
+		QClass: binary.BigEndian.Uint16(qclass),
+	}
 }

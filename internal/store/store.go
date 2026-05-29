@@ -9,6 +9,10 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+type Store struct {
+	Data map[string]model.Address
+}
+
 func LoadConfig(filePath string) (model.Data, error) {
 	var data model.Data
 
@@ -31,8 +35,8 @@ func LoadConfig(filePath string) (model.Data, error) {
 }
 
 // Copying the data into internal store:
-func NewsStore(data model.Data) *model.Store {
-	s := &model.Store{
+func NewsStore(data model.Data) *Store {
+	s := &Store{
 		Data: make(map[string]model.Address),
 	}
 
@@ -45,4 +49,14 @@ func NewsStore(data model.Data) *model.Store {
 	}
 
 	return s
+}
+
+func (s *Store) BuscarIP(ip string) (string, error) {
+	for _, entry := range s.Data {
+		if entry.Value == ip {
+			return entry.Value, nil
+		}
+	}
+
+	return "", fmt.Errorf("no ip record for %s", ip)
 }
