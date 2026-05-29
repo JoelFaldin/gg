@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"gg/internal/parser"
 	"gg/internal/store"
-	"log"
 	"net"
 )
 
@@ -40,10 +39,5 @@ func (s *Server) Run() {
 }
 
 func (s *Server) handle(buf []byte, addr *net.UDPAddr, conn *net.UDPConn, store *store.Store) {
-	_, err := parser.ParseMessage(buf, store)
-	if err != nil {
-		log.Println("parse error:", err)
-	}
-
-	conn.WriteToUDP([]byte("ok"), addr)
+	parser.ParseMessage(buf, store, conn, addr)
 }

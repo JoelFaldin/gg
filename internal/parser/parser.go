@@ -7,6 +7,7 @@ import (
 	"gg/internal/store"
 	"net"
 	"strings"
+	"time"
 )
 
 type Header struct {
@@ -19,23 +20,33 @@ type Header struct {
 }
 
 type Question struct {
-	QName  string
-	QType  uint16
-	QClass uint16
+	QName       string
+	QType       uint16
+	QClass      uint16
+	QuestionEnd int
 }
 
-func ParseMessage(data []byte, store *store.Store) (string, error) {
+func ParseMessage(data []byte, store *store.Store, connection *net.UDPConn, addr *net.UDPAddr) {
 	parseHeader(data[:12])
 	q := parseBody(data[12:])
 
 	ip, err := store.BuscarIP(q.QName)
-	if err != nil {
-		return "", err
+	// Domain found:
+	if err == nil {
+		res := buildResponse(data, q.QuestionEnd, ip)
+		connection.WriteToUDP(res, addr)
+
+	} else { // Domain not found:
+		internet_res, err := forwardQuery(data)
+		if err != nil {
+			fmt.Println("error on forward function", err)
+			return
+		}
+
+		connection.WriteToUDP(internet_res, addr)
 	}
 
 	fmt.Printf("client searches %s -> IP in yaml: %s\n", q.QName, ip)
-
-	return "", nil
 }
 
 func parseHeader(header []byte) Header {
@@ -82,9 +93,10 @@ func parseBody(body []byte) Question {
 	// fmt.Println(qclass)
 
 	return Question{
-		QName:  domain,
-		QType:  binary.BigEndian.Uint16(qtype),
-		QClass: binary.BigEndian.Uint16(qclass),
+		QName:       domain,
+		QType:       binary.BigEndian.Uint16(qtype),
+		QClass:      binary.BigEndian.Uint16(qclass),
+		QuestionEnd: pointer,
 	}
 }
 
@@ -118,4 +130,33 @@ func buildResponse(rawRequest []byte, questionEnd int, ipStr string) []byte {
 	buf.Write(ip)
 
 	return buf.Bytes()
+}
+
+func forwardQuery(data []byte) ([]byte, error) {
+	upstream_addr, err := net.ResolveUDPAddr("udp", "1.1.1.1:53")
+	if err != nil {
+		return nil, err
+	}
+
+	local_conn, err := net.ListenUDP("udp", &net.UDPAddr{IP: net.IPv4zero, Port: 0})
+	if err != nil {
+		return nil, err
+	}
+	defer local_conn.Close()
+
+	_, err = local_conn.WriteTo(data, upstream_addr)
+	if err != nil {
+		return nil, err
+	}
+
+	buf := make([]byte, 1024)
+
+	local_conn.SetReadDeadline(time.Now().Add(2 * time.Second))
+
+	n, _, err := local_conn.ReadFromUDP(buf)
+	if err != nil {
+		return nil, err
+	}
+
+	return buf[:n], nil
 }
