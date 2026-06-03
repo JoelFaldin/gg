@@ -38,7 +38,7 @@ func LoadConfig(filePath string) (model.Data, error) {
 }
 
 // Copying the data into internal store:
-func NewsStore(data model.Data) *Store {
+func NewStore(data model.Data) *Store {
 	s := &Store{
 		Data: make(map[string]model.Address),
 	}

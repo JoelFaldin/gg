@@ -66,11 +66,15 @@ func ParseMessage(data []byte, store *store.Store, connection *net.UDPConn, addr
 
 			ip_final := answer[ip_start:]
 
-			r := net.IP(ip_final).String()
+			r := net.IP(ip_final).To4()
+			if r == nil {
+				fmt.Println("Not ipv4")
+				return
+			}
 
 			// Save to yaml:
 			// Extract IP from internet_res:
-			go store.WriteToYaml(q.QName, r)
+			go store.WriteToYaml(q.QName, r.String())
 
 			connection.WriteToUDP(internet_res, addr)
 		}
@@ -116,8 +120,8 @@ func parseBody(body []byte) Question {
 
 	domain := strings.Join(str, ".")
 
-	qtype := []byte{body[pointer+1], body[pointer+2]}
-	qclass := []byte{body[pointer+3], body[pointer+4]}
+	qtype := []byte{body[pointer], body[pointer+1]}
+	qclass := []byte{body[pointer+2], body[pointer+3]}
 
 	return Question{
 		QName:       domain,

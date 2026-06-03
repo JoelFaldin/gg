@@ -6,3 +6,6 @@
 
 # YAML file:
 *.yaml
+
+# Environment variables:
+*.env

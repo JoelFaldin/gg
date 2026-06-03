@@ -19,7 +19,7 @@ func StartServer(conn *net.UDPConn, store *store.Store) *Server {
 // Execute the core loop of the server. Read incoming request into a 512-sized slice
 func (s *Server) Run() {
 	for {
-		buf := make([]byte, 512)
+		buf := make([]byte, 4096)
 
 		n, addr, err := s.conn.ReadFromUDP(buf)
 		if err != nil {
