@@ -30,18 +30,47 @@ func ParseMessage(data []byte, store *store.Store, connection *net.UDPConn, addr
 	parseHeader(data[:12])
 	q := parseBody(data[12:])
 
-	ip, err := store.BuscarIP(q.QName)
+	ip, err := store.SearchDomain(q.QName)
 	// Domain found:
 	if err == nil {
+		fmt.Println("--- domain found on yaml!!")
 		res := buildResponse(data, q.QuestionEnd, ip)
 		connection.WriteToUDP(res, addr)
 
 	} else { // Domain not found:
-		internet_res, err := forwardQuery(data)
+		fmt.Println("--- domain not found, forwarding...")
+		internet_res, addr, err := forwardQuery(data)
 		if err != nil {
 			fmt.Println("error on forward function", err)
 			return
 		}
+
+		header := parseHeader(internet_res[0:12])
+		pointer := 12
+
+		body := parseBody(internet_res[pointer:])
+		pointer += body.QuestionEnd
+
+		// Add 4 bytes (Qtype (2) and Qclass (2))
+		pointer += 4
+
+		if header.ANCount > 0 {
+			start_answer := pointer
+
+			rdLenth := binary.BigEndian.Uint16(internet_res[start_answer+10 : start_answer+12])
+			fin_answer := start_answer + 12 + int(rdLenth)
+			// 12 is the number of bytes from the start to the field RDLength!!
+
+			answer := internet_res[start_answer:fin_answer]
+			ip_start := len(answer) - int(rdLenth)
+
+			ip_final := answer[ip_start:]
+			fmt.Println(ip_final)
+		}
+
+		// Save to yaml:
+		// Extract IP from internet_res:
+		go store.WriteToYaml(q.QName, string(internet_res))
 
 		connection.WriteToUDP(internet_res, addr)
 	}
@@ -72,6 +101,7 @@ func parseBody(body []byte) Question {
 		length := int(body[pointer])
 
 		if length == 0 {
+			pointer++
 			break
 		}
 
@@ -87,10 +117,6 @@ func parseBody(body []byte) Question {
 
 	qtype := []byte{body[pointer+1], body[pointer+2]}
 	qclass := []byte{body[pointer+3], body[pointer+4]}
-
-	// fmt.Println(domain)
-	// fmt.Println(qtype)
-	// fmt.Println(qclass)
 
 	return Question{
 		QName:       domain,
@@ -132,31 +158,31 @@ func buildResponse(rawRequest []byte, questionEnd int, ipStr string) []byte {
 	return buf.Bytes()
 }
 
-func forwardQuery(data []byte) ([]byte, error) {
+func forwardQuery(data []byte) ([]byte, *net.UDPAddr, error) {
 	upstream_addr, err := net.ResolveUDPAddr("udp", "1.1.1.1:53")
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	local_conn, err := net.ListenUDP("udp", &net.UDPAddr{IP: net.IPv4zero, Port: 0})
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	defer local_conn.Close()
 
 	_, err = local_conn.WriteTo(data, upstream_addr)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	buf := make([]byte, 1024)
 
 	local_conn.SetReadDeadline(time.Now().Add(2 * time.Second))
 
-	n, _, err := local_conn.ReadFromUDP(buf)
+	n, addr, err := local_conn.ReadFromUDP(buf)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return buf[:n], nil
+	return buf[:n], addr, nil
 }
