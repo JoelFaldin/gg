@@ -65,14 +65,15 @@ func ParseMessage(data []byte, store *store.Store, connection *net.UDPConn, addr
 			ip_start := len(answer) - int(rdLenth)
 
 			ip_final := answer[ip_start:]
-			fmt.Println(ip_final)
+
+			r := net.IP(ip_final).String()
+
+			// Save to yaml:
+			// Extract IP from internet_res:
+			go store.WriteToYaml(q.QName, r)
+
+			connection.WriteToUDP(internet_res, addr)
 		}
-
-		// Save to yaml:
-		// Extract IP from internet_res:
-		go store.WriteToYaml(q.QName, string(internet_res))
-
-		connection.WriteToUDP(internet_res, addr)
 	}
 
 	fmt.Printf("client searches %s -> IP in yaml: %s\n", q.QName, ip)
