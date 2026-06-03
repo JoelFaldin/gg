@@ -143,7 +143,7 @@ func buildResponse(rawRequest []byte, questionEnd int, ipStr string) []byte {
 	binary.Write(buf, binary.BigEndian, uint16(0)) // ARCount
 
 	// Copy Question section:
-	buf.Write(rawRequest[12:questionEnd])
+	buf.Write(rawRequest[12 : 12+questionEnd+4])
 
 	// Build answer section:
 	binary.Write(buf, binary.BigEndian, uint16(0xC00C))
@@ -153,7 +153,7 @@ func buildResponse(rawRequest []byte, questionEnd int, ipStr string) []byte {
 
 	ip := net.ParseIP(ipStr).To4()
 
-	binary.Write(buf, binary.BigEndian, uint16(len(ip)))
+	binary.Write(buf, binary.BigEndian, uint32(len(ip)))
 	buf.Write(ip)
 
 	return buf.Bytes()

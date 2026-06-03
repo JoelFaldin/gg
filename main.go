@@ -8,14 +8,14 @@ import (
 )
 
 func main() {
-	addr := net.UDPAddr{Port: 8053}
+	addr := net.UDPAddr{Port: 53}
 	conn, err := net.ListenUDP("udp", &addr)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer conn.Close()
 
-	log.Printf("DNS server listening on :%d\n", 8053)
+	log.Printf("DNS server listening on :%d\n", 53)
 
 	config, err := store.LoadConfig("data.yaml")
 	if err != nil {
