@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"gg/internal/model"
 	"os"
+	"sync"
 
 	"gopkg.in/yaml.v3"
 )
@@ -12,6 +13,8 @@ import (
 type Store struct {
 	Data map[string]model.Address
 }
+
+var fileMutex sync.Mutex
 
 func LoadConfig(filePath string) (model.Data, error) {
 	var data model.Data
@@ -42,7 +45,7 @@ func NewsStore(data model.Data) *Store {
 
 	for k, v := range data.Storage {
 		newAddress := model.Address{
-			Value: v.Value,
+			IP: v.IP,
 		}
 
 		s.Data[k] = newAddress
@@ -51,12 +54,44 @@ func NewsStore(data model.Data) *Store {
 	return s
 }
 
-func (s *Store) BuscarIP(ip string) (string, error) {
-	for _, entry := range s.Data {
-		if entry.Value == ip {
-			return entry.Value, nil
-		}
+func (s *Store) SearchDomain(domain string) (string, error) {
+	d, ok := s.Data[domain]
+	if !ok {
+		return "", fmt.Errorf("domain %s not found", domain)
 	}
 
-	return "", fmt.Errorf("no ip record for %s", ip)
+	return d.IP, nil
+}
+
+func (s *Store) WriteToYaml(domain string, ip_string string) error {
+	fileMutex.Lock()
+	defer fileMutex.Unlock()
+
+	if ip_string == "" {
+		return nil
+	}
+
+	new_entry := model.Address{
+		Domain: domain,
+		IP:     ip_string,
+	}
+
+	s.Data[domain] = new_entry
+
+	data_to_save := model.Data{
+		Storage: s.Data,
+	}
+
+	res, err := yaml.Marshal(data_to_save)
+	if err != nil {
+		return err
+	}
+
+	err = os.WriteFile("data.yaml", res, 0644)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("[Store] %s guardado en el el yaml!", domain)
+	return nil
 }
