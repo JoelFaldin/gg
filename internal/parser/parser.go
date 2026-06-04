@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"gg/internal/config"
 	"gg/internal/store"
 	"net"
 	"strings"
@@ -27,8 +28,8 @@ type Question struct {
 }
 
 func ParseMessage(data []byte, store *store.Store, connection *net.UDPConn, addr *net.UDPAddr) {
-	parseHeader(data[:12])
 	q := parseBody(data[12:])
+	fmt.Println("type:", q.QType)
 
 	ip, err := store.SearchDomain(q.QName)
 	// Domain found:
@@ -164,7 +165,9 @@ func buildResponse(rawRequest []byte, questionEnd int, ipStr string) []byte {
 }
 
 func forwardQuery(data []byte) ([]byte, *net.UDPAddr, error) {
-	upstream_addr, err := net.ResolveUDPAddr("udp", "1.1.1.1:53")
+	address := config.GetAddress()
+
+	upstream_addr, err := net.ResolveUDPAddr("udp", address)
 	if err != nil {
 		return nil, nil, err
 	}

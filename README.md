@@ -7,6 +7,7 @@ A Go-based mini DNS server. Project built to learn and understand about DNS!
 ```
 gg/
 ├── internal/        # App internal logic
+|   ├── config/      # Functions to expose env variables
 |   ├── model/       # YAML model
 |   ├── parser/      # Utilities to parse request
 |   ├── server/      # Core logic that handles requests
@@ -25,11 +26,12 @@ gg/
 
 ## Environment variables
 
-The project uses environment variables to facilitate `port` and `file` configuration. Example:
+The project uses environment variables to facilitate `port`, `file` and `address` configuration. Example:
 
 ```
 PORT=8053
 FILE=data.yaml
+ADDRESS=8.8.8.8:53
 ```
 
 ## Instalation

@@ -29,3 +29,13 @@ func GetFile() string {
 
 	return file
 }
+
+func GetAddress() string {
+	address := os.Getenv("ADDRESS")
+
+	if address == "" {
+		log.Fatal("Invalid address value. Remember to specify the port (eg. 8.8.8.8:53)")
+	}
+
+	return address
+}
