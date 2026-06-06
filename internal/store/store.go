@@ -45,7 +45,7 @@ func NewStore(data model.Data) *Store {
 
 	for k, v := range data.Storage {
 		newAddress := model.Address{
-			IP: v.IP,
+			IPV4: v.IPV4,
 		}
 
 		s.Data[k] = newAddress
@@ -60,7 +60,7 @@ func (s *Store) SearchDomain(domain string) (string, error) {
 		return "", fmt.Errorf("domain %s not found", domain)
 	}
 
-	return d.IP, nil
+	return d.IPV4, nil
 }
 
 func (s *Store) WriteToYaml(domain string, ip_string string) error {
@@ -72,7 +72,7 @@ func (s *Store) WriteToYaml(domain string, ip_string string) error {
 	}
 
 	new_entry := model.Address{
-		IP: ip_string,
+		IPV4: ip_string,
 	}
 
 	s.Data[domain] = new_entry

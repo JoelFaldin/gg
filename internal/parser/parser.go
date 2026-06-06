@@ -55,6 +55,7 @@ func ParseMessage(data []byte, store *store.Store, connection *net.UDPConn, addr
 		// Add 4 bytes (Qtype (2) and Qclass (2))
 		pointer += 4
 
+		// Check if there are answers:
 		if header.ANCount > 0 {
 			start_answer := pointer
 

@@ -1,7 +1,7 @@
 package model
 
 type Address struct {
-	IP string `yaml:"ip"`
+	IPV4 string `yaml:"ipv4"`
 }
 
 type Data struct {
