@@ -1,8 +1,7 @@
 package model
 
 type Address struct {
-	Domain string `yaml:"domain"`
-	IP     string `yaml:"ip"`
+	IP string `yaml:"ip"`
 }
 
 type Data struct {

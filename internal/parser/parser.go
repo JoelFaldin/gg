@@ -75,6 +75,7 @@ func ParseMessage(data []byte, store *store.Store, connection *net.UDPConn, addr
 
 			// Save to yaml:
 			// Extract IP from internet_res:
+			fmt.Println("domain name:", q.QName)
 			go store.WriteToYaml(q.QName, r.String())
 
 			connection.WriteToUDP(internet_res, addr)

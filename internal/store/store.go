@@ -72,8 +72,7 @@ func (s *Store) WriteToYaml(domain string, ip_string string) error {
 	}
 
 	new_entry := model.Address{
-		Domain: domain,
-		IP:     ip_string,
+		IP: ip_string,
 	}
 
 	s.Data[domain] = new_entry
@@ -92,6 +91,6 @@ func (s *Store) WriteToYaml(domain string, ip_string string) error {
 		return err
 	}
 
-	fmt.Printf("[Store] %s guardado en el el yaml!", domain)
+	fmt.Printf("[Store] %s guardado en el el yaml!\n", domain)
 	return nil
 }
