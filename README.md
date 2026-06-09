@@ -34,7 +34,7 @@ FILE=data.yaml
 ADDRESS=8.8.8.8:53
 ```
 
-## Instalation
+## Instalation & Usage
 
 1. Clone the repo on your machine.
 2. Run `go install`.
@@ -42,6 +42,10 @@ ADDRESS=8.8.8.8:53
 4. In another terminal, send a request:
 ```
 dig "@127.0.0.1" -p 8053 google.com
+```
+5. You can also use the `+short` extension to only print the address:
+```
+dig "@127.0.0.1" -p 8053 google.com +short
 ```
 
 ## Thanks for visiting!!
