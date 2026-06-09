@@ -39,5 +39,15 @@ func (s *Server) Run() {
 }
 
 func (s *Server) handle(buf []byte, addr *net.UDPAddr, conn *net.UDPConn, store *store.Store) {
-	parser.ParseMessage(buf, store, conn, addr)
+	res, err := parser.ParseMessage(buf, store, conn, addr)
+	if err != nil {
+		return
+	}
+
+	if len(res) > 0 {
+		_, err := conn.WriteToUDP(res, addr)
+		if err != nil {
+			fmt.Printf("Error processing %s: %v\n", addr, err)
+		}
+	}
 }

@@ -54,16 +54,16 @@ func NewStore(data model.Data) *Store {
 	return s
 }
 
-func (s *Store) SearchDomain(domain string) (string, error) {
+func (s *Store) SearchDomain(domain string) (string, bool) {
 	d, ok := s.Data[domain]
 	if !ok {
-		return "", fmt.Errorf("domain %s not found", domain)
+		return "", false
 	}
 
-	return d.IPV4, nil
+	return d.IPV4, true
 }
 
-func (s *Store) WriteToYaml(domain string, ip_string string) error {
+func (s *Store) WriteToYaml(domain string, ip_string string, questionType uint16) error {
 	fileMutex.Lock()
 	defer fileMutex.Unlock()
 

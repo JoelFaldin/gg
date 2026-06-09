@@ -27,8 +27,8 @@ func (r RecordA) Serialize(ipStr string) ([]byte, error) {
 	buf = append(buf, 0x00, 0x01) // 1, IN
 
 	// TTL:
-	ttl := make([]byte, 0, 4)
-	binary.BigEndian.PutUint16(ttl, 300)
+	ttl := make([]byte, 4)
+	binary.BigEndian.PutUint32(ttl, 300)
 	buf = append(buf, ttl...)
 
 	// RDLength:

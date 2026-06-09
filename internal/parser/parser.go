@@ -1,10 +1,10 @@
 package parser
 
 import (
-	"bytes"
 	"encoding/binary"
 	"fmt"
 	"gg/internal/config"
+	"gg/internal/records"
 	"gg/internal/store"
 	"net"
 	"strings"
@@ -27,63 +27,73 @@ type Question struct {
 	QuestionEnd int
 }
 
-func ParseMessage(data []byte, store *store.Store, connection *net.UDPConn, addr *net.UDPAddr) {
+func ParseMessage(data []byte, store *store.Store, connection *net.UDPConn, addr *net.UDPAddr) ([]byte, error) {
 	q := parseBody(data[12:])
 	fmt.Println("type:", q.QType)
 
-	ip, err := store.SearchDomain(q.QName)
-	// Domain found:
-	if err == nil {
-		fmt.Println("--- domain found on yaml!!")
-		res := buildResponse(data, q.QuestionEnd, ip)
-		connection.WriteToUDP(res, addr)
+	ip, exists := store.SearchDomain(q.QName)
 
-	} else { // Domain not found:
-		fmt.Println("--- domain not found, forwarding...")
-		internet_res, addr, err := forwardQuery(data)
+	// If domain does not exists on YAML:
+	if !exists {
+		res, err := forwardQuery(data)
 		if err != nil {
-			fmt.Println("error on forward function", err)
-			return
+			return nil, err
 		}
 
-		header := parseHeader(internet_res[0:12])
-		pointer := 12
-
-		body := parseBody(internet_res[pointer:])
-		pointer += body.QuestionEnd
-
-		// Add 4 bytes (Qtype (2) and Qclass (2))
-		pointer += 4
-
-		// Check if there are answers:
-		if header.ANCount > 0 {
-			start_answer := pointer
-
-			rdLenth := binary.BigEndian.Uint16(internet_res[start_answer+10 : start_answer+12])
-			fin_answer := start_answer + 12 + int(rdLenth)
-			// 12 is the number of bytes from the start to the field RDLength!!
-
-			answer := internet_res[start_answer:fin_answer]
-			ip_start := len(answer) - int(rdLenth)
-
-			ip_final := answer[ip_start:]
-
-			r := net.IP(ip_final).To4()
-			if r == nil {
-				fmt.Println("Not ipv4")
-				return
-			}
-
-			// Save to yaml:
-			// Extract IP from internet_res:
-			fmt.Println("domain name:", q.QName)
-			go store.WriteToYaml(q.QName, r.String())
-
-			connection.WriteToUDP(internet_res, addr)
+		extractedIp, err := extractIp(res, q)
+		if err == nil && extractedIp != "" {
+			go store.WriteToYaml(q.QName, extractedIp, q.QType)
 		}
+
+		return res, nil
 	}
 
-	fmt.Printf("client searches %s -> IP in yaml: %s\n", q.QName, ip)
+	// Prepare for response:
+	var answerBytes []byte
+	var err error
+
+	switch q.QType {
+	case 1:
+		if ip == "" {
+			return forwardQuery(data)
+		}
+		answerBytes, err = records.RecordA{}.Serialize(ip)
+	default:
+		return forwardQuery(data)
+	}
+
+	if err != nil {
+		fmt.Println("error while serializing", err)
+	}
+
+	// Prepare response header:
+	headerBytes := make([]byte, 12)
+	copy(headerBytes, data[0:12])
+
+	headerBytes[2] |= 0x80 // Set QRbit to 1, "response"
+
+	// Counters:
+	headerBytes[6] = 0x00
+	headerBytes[7] = 0x01 // Set ANCOUNT to 1
+
+	headerBytes[8] = 0x00
+	headerBytes[9] = 0x00 // Set NSCOUNT to 0
+
+	headerBytes[10] = 0x00
+	headerBytes[11] = 0x00 // Set ARCOUNT to 0
+
+	// Extract Question bytes:
+	questionEnd := 12 + q.QuestionEnd + 4
+	questionBytes := data[12:questionEnd]
+
+	response := []byte{}
+	response = append(response, headerBytes...)
+	response = append(response, questionBytes...)
+	response = append(response, answerBytes...)
+
+	return response, nil
+
+	// fmt.Printf("client searches %s -> IP in yaml: %s\n", q.QName, ip)
 }
 
 func parseHeader(header []byte) Header {
@@ -134,65 +144,54 @@ func parseBody(body []byte) Question {
 	}
 }
 
-func buildResponse(rawRequest []byte, questionEnd int, ipStr string) []byte {
-	buf := new(bytes.Buffer)
+func extractIp(res []byte, q Question) (string, error) {
+	answerStart := 12 + q.QuestionEnd + 4
 
-	id := rawRequest[0:2]
-	// Client id:
-	buf.Write(id)
+	if len(res) <= answerStart+12 {
+		return "", fmt.Errorf("no answer section\n")
+	}
 
-	// Its a message, dns server is working with no problems:
-	binary.Write(buf, binary.BigEndian, uint16(0x8180))
+	rdLenPos := answerStart + 10
+	rdLen := binary.BigEndian.Uint16(res[rdLenPos : rdLenPos+2])
 
-	binary.Write(buf, binary.BigEndian, uint16(1)) // 1 question
-	binary.Write(buf, binary.BigEndian, uint16(1)) // 1 answer
-	binary.Write(buf, binary.BigEndian, uint16(0)) // NSCount
-	binary.Write(buf, binary.BigEndian, uint16(0)) // ARCount
+	rDataPos := rdLenPos + 2
+	if len(res) < rDataPos+int(rdLen) {
+		return "", fmt.Errorf("malformatted or corrupted package\n")
+	}
 
-	// Copy Question section:
-	buf.Write(rawRequest[12 : 12+questionEnd+4])
+	ipBytes := res[rDataPos : rDataPos+int(rdLen)]
 
-	// Build answer section:
-	binary.Write(buf, binary.BigEndian, uint16(0xC00C))
-	binary.Write(buf, binary.BigEndian, uint16(1))   // Type A
-	binary.Write(buf, binary.BigEndian, uint16(1))   // Class IN
-	binary.Write(buf, binary.BigEndian, uint16(300)) // TTL: 5 mins
-
-	ip := net.ParseIP(ipStr).To4()
-
-	binary.Write(buf, binary.BigEndian, uint32(len(ip)))
-	buf.Write(ip)
-
-	return buf.Bytes()
+	ipNet := net.IP(ipBytes)
+	return ipNet.String(), nil
 }
 
-func forwardQuery(data []byte) ([]byte, *net.UDPAddr, error) {
+func forwardQuery(data []byte) ([]byte, error) {
 	address := config.GetAddress()
 
 	upstream_addr, err := net.ResolveUDPAddr("udp", address)
 	if err != nil {
-		return nil, nil, err
+		return nil, fmt.Errorf("error resolving upstream: %w\n", err)
 	}
 
-	local_conn, err := net.ListenUDP("udp", &net.UDPAddr{IP: net.IPv4zero, Port: 0})
+	local_conn, err := net.ListenUDP("udp", &net.UDPAddr{IP: nil, Port: 0})
 	if err != nil {
-		return nil, nil, err
+		return nil, fmt.Errorf("error creating local socket for forward: %w\n", err)
 	}
 	defer local_conn.Close()
 
 	_, err = local_conn.WriteTo(data, upstream_addr)
 	if err != nil {
-		return nil, nil, err
+		return nil, fmt.Errorf("error writting to upstream: %w\n", err)
 	}
 
-	buf := make([]byte, 1024)
+	buf := make([]byte, 4096)
 
 	local_conn.SetReadDeadline(time.Now().Add(2 * time.Second))
 
-	n, addr, err := local_conn.ReadFromUDP(buf)
+	n, _, err := local_conn.ReadFromUDP(buf)
 	if err != nil {
-		return nil, nil, err
+		return nil, fmt.Errorf("error reading upstream response: %w\n", err)
 	}
 
-	return buf[:n], addr, nil
+	return buf[:n], nil
 }
