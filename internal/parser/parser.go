@@ -35,17 +35,7 @@ func ParseMessage(data []byte, store *store.Store, connection *net.UDPConn, addr
 
 	// If domain does not exists on YAML:
 	if !exists {
-		res, err := forwardQuery(data)
-		if err != nil {
-			return nil, err
-		}
-
-		extractedIp, err := extractIp(res, q)
-		if err == nil && extractedIp != "" {
-			go store.WriteToYaml(q.QName, extractedIp, q.QType)
-		}
-
-		return res, nil
+		return forwardAndCache(data, q, store)
 	}
 
 	// Prepare for response:
@@ -54,12 +44,12 @@ func ParseMessage(data []byte, store *store.Store, connection *net.UDPConn, addr
 
 	switch q.QType {
 	case 1:
-		if ip == "" {
-			return forwardQuery(data)
+		if ip.IPV4 == "" {
+			return forwardAndCache(data, q, store)
 		}
-		answerBytes, err = records.RecordA{}.Serialize(ip)
+		answerBytes, err = records.RecordA{}.Serialize(ip.IPV4)
 	default:
-		return forwardQuery(data)
+		return forwardAndCache(data, q, store)
 	}
 
 	if err != nil {
@@ -71,6 +61,7 @@ func ParseMessage(data []byte, store *store.Store, connection *net.UDPConn, addr
 	copy(headerBytes, data[0:12])
 
 	headerBytes[2] |= 0x80 // Set QRbit to 1, "response"
+	headerBytes[3] |= 0x80 // Set RAbit to 1
 
 	// Counters:
 	headerBytes[6] = 0x00
@@ -108,11 +99,6 @@ func parseHeader(header []byte) Header {
 }
 
 func parseBody(body []byte) Question {
-	// Classic question section:
-	// fmt.Println("----------")
-	// fmt.Println("full body:", body)
-	// fmt.Println("----------")
-
 	var str []string
 	pointer := 0
 	for {
@@ -163,6 +149,20 @@ func extractIp(res []byte, q Question) (string, error) {
 
 	ipNet := net.IP(ipBytes)
 	return ipNet.String(), nil
+}
+
+func forwardAndCache(data []byte, question Question, store *store.Store) ([]byte, error) {
+	res, err := forwardQuery(data)
+	if err != nil {
+		return nil, err
+	}
+
+	extractedIp, err := extractIp(res, question)
+	if err == nil && extractedIp != "" {
+		go store.WriteToYaml(question.QName, extractedIp, question.QType)
+	}
+
+	return res, nil
 }
 
 func forwardQuery(data []byte) ([]byte, error) {

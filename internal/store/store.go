@@ -54,13 +54,13 @@ func NewStore(data model.Data) *Store {
 	return s
 }
 
-func (s *Store) SearchDomain(domain string) (string, bool) {
+func (s *Store) SearchDomain(domain string) (model.Address, bool) {
 	d, ok := s.Data[domain]
 	if !ok {
-		return "", false
+		return model.Address{}, false
 	}
 
-	return d.IPV4, true
+	return d, true
 }
 
 func (s *Store) WriteToYaml(domain string, ip_string string, questionType uint16) error {
@@ -71,11 +71,30 @@ func (s *Store) WriteToYaml(domain string, ip_string string, questionType uint16
 		return nil
 	}
 
-	new_entry := model.Address{
-		IPV4: ip_string,
+	// Check if domain already exists:
+	record, exists := s.Data[domain]
+	if !exists {
+		record = model.Address{}
 	}
 
-	s.Data[domain] = new_entry
+	switch questionType {
+	case 1:
+		fmt.Println("test")
+		if record.IPV4 == ip_string {
+			return nil
+		}
+		record.IPV4 = ip_string
+	case 28:
+		if record.IPV6 == ip_string {
+			return nil
+		}
+		record.IPV6 = ip_string
+	default:
+		fmt.Println("resource not supported (yet!)")
+		return nil
+	}
+
+	s.Data[domain] = record
 
 	data_to_save := model.Data{
 		Storage: s.Data,
@@ -91,6 +110,6 @@ func (s *Store) WriteToYaml(domain string, ip_string string, questionType uint16
 		return err
 	}
 
-	fmt.Printf("[Store] %s guardado en el el yaml!\n", domain)
+	fmt.Printf("[Store] %s saved on YAML!\n", domain)
 	return nil
 }
