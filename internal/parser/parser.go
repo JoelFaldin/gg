@@ -48,6 +48,11 @@ func ParseMessage(data []byte, store *store.Store, connection *net.UDPConn, addr
 			return forwardAndCache(data, q, store)
 		}
 		answerBytes, err = records.RecordA{}.Serialize(ip.IPV4)
+	case 28:
+		if ip.IPV6 == "" {
+			return forwardAndCache(data, q, store)
+		}
+		answerBytes, err = records.RecordAAAA{}.Serialize(ip.IPV6)
 	default:
 		return forwardAndCache(data, q, store)
 	}

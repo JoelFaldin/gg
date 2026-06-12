@@ -79,7 +79,6 @@ func (s *Store) WriteToYaml(domain string, ip_string string, questionType uint16
 
 	switch questionType {
 	case 1:
-		fmt.Println("test")
 		if record.IPV4 == ip_string {
 			return nil
 		}

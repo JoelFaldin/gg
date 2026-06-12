@@ -43,3 +43,36 @@ func (r RecordA) Serialize(ipStr string) ([]byte, error) {
 
 	return buf, nil
 }
+
+type RecordAAAA struct{}
+
+func (r RecordAAAA) Type() uint16 { return 28 }
+func (r RecordAAAA) Serialize(ipStr string) ([]byte, error) {
+	buf := make([]byte, 0, 16)
+
+	// Name:
+	buf = append(buf, 0xc0, 0x0c)
+
+	// Type:
+	buf = append(buf, 0x00, 0x1c)
+
+	// Class:
+	buf = append(buf, 0x00, 0x01)
+
+	// TTL:
+	ttl := make([]byte, 4)
+	binary.BigEndian.PutUint32(ttl, 300)
+	buf = append(buf, ttl...)
+
+	// RDLength:
+	buf = append(buf, 0x00, 0x10)
+
+	// RData:
+	ip := net.ParseIP(ipStr).To16()
+	if ip == nil {
+		return nil, fmt.Errorf("invalid ipv6\n")
+	}
+	buf = append(buf, ip...)
+
+	return buf, nil
+}
