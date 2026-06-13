@@ -1,7 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"gg/internal/config"
+	"gg/internal/logger"
 	"gg/internal/server"
 	"gg/internal/store"
 	"log"
@@ -11,6 +13,9 @@ import (
 )
 
 func main() {
+	// Init logger:
+	customLogger := logger.CustomLogger()
+
 	// Load env variables:
 	err := godotenv.Load(".env")
 	if err != nil {
@@ -26,7 +31,7 @@ func main() {
 	}
 	defer conn.Close()
 
-	log.Printf("DNS server listening on :%d\n", port)
+	customLogger.Info(fmt.Sprintf("DNS server listening on port :%d", port))
 
 	file := config.GetFile()
 	config, err := store.LoadConfig(file)
