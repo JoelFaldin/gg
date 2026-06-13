@@ -3,6 +3,7 @@ package store
 import (
 	"errors"
 	"fmt"
+	"gg/internal/logger"
 	"gg/internal/model"
 	"os"
 	"sync"
@@ -109,6 +110,8 @@ func (s *Store) WriteToYaml(domain string, ip_string string, questionType uint16
 		return err
 	}
 
-	fmt.Printf("[Store] %s saved on YAML!\n", domain)
+	customLogger := logger.CustomLogger()
+	customLogger.Info(fmt.Sprintf("[Store] %s saved on YAML!", domain))
+
 	return nil
 }

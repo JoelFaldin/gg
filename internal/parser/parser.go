@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"gg/internal/config"
+	"gg/internal/logger"
 	"gg/internal/records"
 	"gg/internal/store"
 	"net"
@@ -28,8 +29,10 @@ type Question struct {
 }
 
 func ParseMessage(data []byte, store *store.Store, connection *net.UDPConn, addr *net.UDPAddr) ([]byte, error) {
+	customLogger := logger.CustomLogger()
+
 	q := parseBody(data[12:])
-	fmt.Println("type:", q.QType)
+	customLogger.Info(fmt.Sprintf("Type: %d", q.QType))
 
 	ip, exists := store.SearchDomain(q.QName)
 

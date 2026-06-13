@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"gg/internal/logger"
 	"gg/internal/parser"
 	"gg/internal/store"
 	"net"
@@ -18,6 +19,8 @@ func StartServer(conn *net.UDPConn, store *store.Store) *Server {
 
 // Execute the core loop of the server. Read incoming request into a 512-sized slice
 func (s *Server) Run() {
+	customLogger := logger.CustomLogger()
+
 	for {
 		buf := make([]byte, 4096)
 
@@ -31,7 +34,7 @@ func (s *Server) Run() {
 			continue
 		}
 
-		fmt.Printf("bytes enviados: %d\n", n)
+		customLogger.Info(fmt.Sprintf("Bytes enviados: %d", n))
 
 		// Pass buf[:n], only used bytes
 		go s.handle(buf[:n], addr, s.conn, s.store)
