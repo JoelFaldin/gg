@@ -47,15 +47,15 @@ func ParseMessage(data []byte, store *store.Store, connection *net.UDPConn, addr
 
 	switch q.QType {
 	case 1:
-		if ip.IPV4 == "" {
+		if ip.IPv4 == "" {
 			return forwardAndCache(data, q, store)
 		}
-		answerBytes, err = records.RecordA{}.Serialize(ip.IPV4)
+		answerBytes, err = records.RecordA{}.Serialize(ip.IPv4)
 	case 28:
-		if ip.IPV6 == "" {
+		if ip.IPv6 == "" {
 			return forwardAndCache(data, q, store)
 		}
-		answerBytes, err = records.RecordAAAA{}.Serialize(ip.IPV6)
+		answerBytes, err = records.RecordAAAA{}.Serialize(ip.IPv6)
 	default:
 		return forwardAndCache(data, q, store)
 	}

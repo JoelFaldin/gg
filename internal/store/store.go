@@ -46,7 +46,8 @@ func NewStore(data model.Data) *Store {
 
 	for k, v := range data.Storage {
 		newAddress := model.Address{
-			IPV4: v.IPV4,
+			IPv4: v.IPv4,
+			IPv6: v.IPv6,
 		}
 
 		s.Data[k] = newAddress
@@ -80,15 +81,15 @@ func (s *Store) WriteToYaml(domain string, ip_string string, questionType uint16
 
 	switch questionType {
 	case 1:
-		if record.IPV4 == ip_string {
+		if record.IPv4 == ip_string {
 			return nil
 		}
-		record.IPV4 = ip_string
+		record.IPv4 = ip_string
 	case 28:
-		if record.IPV6 == ip_string {
+		if record.IPv6 == ip_string {
 			return nil
 		}
-		record.IPV6 = ip_string
+		record.IPv6 = ip_string
 	default:
 		fmt.Println("resource not supported (yet!)")
 		return nil

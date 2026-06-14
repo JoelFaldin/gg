@@ -1,8 +1,8 @@
 package model
 
 type Address struct {
-	IPV4 string `yaml:"ipv4,omitempty"`
-	IPV6 string `yaml:"ipv6,omitempty"`
+	IPv4 string `yaml:"ipv4,omitempty"`
+	IPv6 string `yaml:"ipv6,omitempty"`
 }
 
 type Data struct {
