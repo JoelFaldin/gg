@@ -35,7 +35,7 @@ func main() {
 	file := config.GetFile()
 	config, err := store.LoadConfig(file)
 	if err != nil {
-		customLogger.Error("Coul not load data.yaml: %v", err)
+		customLogger.Error(fmt.Sprintf("Could not load data.yaml: %v", err))
 	}
 
 	store := store.NewStore(config)

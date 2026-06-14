@@ -67,16 +67,17 @@ func (s *Store) SearchDomain(domain string) (model.Address, bool) {
 	return d, true
 }
 
-func (s *Store) WriteToYaml(domain string, ip_string string, questionType uint16) error {
+func (s *Store) WriteToYaml(domain string, ips []string, questionType uint16) error {
 	fileMutex.Lock()
 	defer fileMutex.Unlock()
 
 	customLogger := logger.CustomLogger()
 
-	if ip_string == "" {
+	if len(ips) == 0 {
 		return nil
 	}
 
+	fmt.Println(domain, questionType)
 	// Check if domain already exists:
 	record, exists := s.Data[domain]
 	if !exists {
@@ -85,15 +86,9 @@ func (s *Store) WriteToYaml(domain string, ip_string string, questionType uint16
 
 	switch questionType {
 	case 1:
-		if record.IPv4 == ip_string {
-			return nil
-		}
-		record.IPv4 = ip_string
+		record.IPv4 = ips
 	case 28:
-		if record.IPv6 == ip_string {
-			return nil
-		}
-		record.IPv6 = ip_string
+		record.IPv6 = ips
 	default:
 		customLogger.Warn("Resource not supported (yet!)")
 		return nil

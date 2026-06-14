@@ -3,13 +3,13 @@ package parser
 import (
 	"encoding/binary"
 	"fmt"
-	"gg/internal/config"
+	"gg/internal/helpers"
 	"gg/internal/logger"
+	"gg/internal/model"
 	"gg/internal/records"
 	"gg/internal/store"
 	"net"
 	"strings"
-	"time"
 )
 
 type Header struct {
@@ -19,13 +19,6 @@ type Header struct {
 	ANCount uint16
 	NSCount uint16
 	ARCount uint16
-}
-
-type Question struct {
-	QName       string
-	QType       uint16
-	QClass      uint16
-	QuestionEnd int
 }
 
 func ParseMessage(data []byte, store *store.Store, connection *net.UDPConn, addr *net.UDPAddr) ([]byte, error) {
@@ -38,7 +31,7 @@ func ParseMessage(data []byte, store *store.Store, connection *net.UDPConn, addr
 
 	// If domain does not exists on YAML:
 	if !exists {
-		return forwardAndCache(data, q, store)
+		return helpers.ForwardAndCache(data, q, store)
 	}
 
 	// Prepare for response:
@@ -47,17 +40,17 @@ func ParseMessage(data []byte, store *store.Store, connection *net.UDPConn, addr
 
 	switch q.QType {
 	case 1:
-		if ip.IPv4 == "" {
-			return forwardAndCache(data, q, store)
+		if len(ip.IPv4) == 0 {
+			return helpers.ForwardAndCache(data, q, store)
 		}
 		answerBytes, err = records.RecordA{}.Serialize(ip.IPv4)
 	case 28:
-		if ip.IPv6 == "" {
-			return forwardAndCache(data, q, store)
+		if len(ip.IPv6) == 0 {
+			return helpers.ForwardAndCache(data, q, store)
 		}
 		answerBytes, err = records.RecordAAAA{}.Serialize(ip.IPv6)
 	default:
-		return forwardAndCache(data, q, store)
+		return helpers.ForwardAndCache(data, q, store)
 	}
 
 	if err != nil {
@@ -106,7 +99,7 @@ func parseHeader(header []byte) Header {
 	}
 }
 
-func parseBody(body []byte) Question {
+func parseBody(body []byte) model.Question {
 	var str []string
 	pointer := 0
 	for {
@@ -130,80 +123,10 @@ func parseBody(body []byte) Question {
 	qtype := []byte{body[pointer], body[pointer+1]}
 	qclass := []byte{body[pointer+2], body[pointer+3]}
 
-	return Question{
+	return model.Question{
 		QName:       domain,
 		QType:       binary.BigEndian.Uint16(qtype),
 		QClass:      binary.BigEndian.Uint16(qclass),
 		QuestionEnd: pointer,
 	}
-}
-
-func extractIp(res []byte, q Question) (string, error) {
-	answerStart := 12 + q.QuestionEnd + 4
-
-	if len(res) <= answerStart+12 {
-		return "", fmt.Errorf("no answer section\n")
-	}
-
-	rdLenPos := answerStart + 10
-	rdLen := binary.BigEndian.Uint16(res[rdLenPos : rdLenPos+2])
-
-	rDataPos := rdLenPos + 2
-	if len(res) < rDataPos+int(rdLen) {
-		return "", fmt.Errorf("malformatted or corrupted package\n")
-	}
-
-	ipBytes := res[rDataPos : rDataPos+int(rdLen)]
-
-	ipNet := net.IP(ipBytes)
-	return ipNet.String(), nil
-}
-
-func forwardAndCache(data []byte, question Question, store *store.Store) ([]byte, error) {
-	res, err := forwardQuery(data)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to forward query: %w", err)
-	}
-
-	extractedIp, err := extractIp(res, question)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to extract IP for %s: %v", question.QName, err)
-	}
-
-	if extractedIp != "" {
-		go store.WriteToYaml(question.QName, extractedIp, question.QType)
-	}
-
-	return res, nil
-}
-
-func forwardQuery(data []byte) ([]byte, error) {
-	address := config.GetAddress()
-
-	upstream_addr, err := net.ResolveUDPAddr("udp", address)
-	if err != nil {
-		return nil, fmt.Errorf("error resolving upstream: %w\n", err)
-	}
-
-	local_conn, err := net.ListenUDP("udp", &net.UDPAddr{IP: nil, Port: 0})
-	if err != nil {
-		return nil, fmt.Errorf("error creating local socket for forward: %w\n", err)
-	}
-	defer local_conn.Close()
-
-	_, err = local_conn.WriteTo(data, upstream_addr)
-	if err != nil {
-		return nil, fmt.Errorf("error writting to upstream: %w\n", err)
-	}
-
-	buf := make([]byte, 4096)
-
-	local_conn.SetReadDeadline(time.Now().Add(2 * time.Second))
-
-	n, _, err := local_conn.ReadFromUDP(buf)
-	if err != nil {
-		return nil, fmt.Errorf("error reading upstream response: %w\n", err)
-	}
-
-	return buf[:n], nil
 }
