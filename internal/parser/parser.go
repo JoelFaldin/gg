@@ -25,7 +25,7 @@ func ParseMessage(data []byte, store *store.Store, connection *net.UDPConn, addr
 	customLogger := logger.CustomLogger()
 
 	q := parseBody(data[12:])
-	customLogger.Info(fmt.Sprintf("Type: %d", q.QType))
+	customLogger.Debug(fmt.Sprintf("Type: %d", q.QType))
 
 	ip, exists := store.SearchDomain(q.QName)
 

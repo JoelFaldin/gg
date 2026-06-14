@@ -77,7 +77,6 @@ func (s *Store) WriteToYaml(domain string, ips []string, questionType uint16) er
 		return nil
 	}
 
-	fmt.Println(domain, questionType)
 	// Check if domain already exists:
 	record, exists := s.Data[domain]
 	if !exists {

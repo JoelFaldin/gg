@@ -34,7 +34,7 @@ func (s *Server) Run() {
 			continue
 		}
 
-		customLogger.Info(fmt.Sprintf("Bytes sent: %d", n))
+		customLogger.Debug(fmt.Sprintf("Bytes sent: %d", n))
 
 		// Pass buf[:n], only used bytes
 		go s.handle(buf[:n], addr, s.conn, s.store)

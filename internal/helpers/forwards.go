@@ -76,7 +76,7 @@ func extractAnswer(res []byte, q model.Question) (model.Answer, error) {
 				ipStr = addr.String()
 			}
 		default:
-			fmt.Printf("Skipping unsupported record type: %d\n", ansType)
+			return answer, fmt.Errorf("Skipping unsupported record type: %d", ansType)
 		}
 
 		if ipStr != "" {
@@ -120,9 +120,9 @@ func ForwardAndCache(data []byte, question model.Question, store *store.Store) (
 		return nil, fmt.Errorf("Failed to forward query: %w", err)
 	}
 
-	answer, err := extractAnswer(res, question) // new function!!
+	answer, err := extractAnswer(res, question)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Failed to extract answer from remote: %w", err)
 	}
 
 	if len(answer.IP) == 0 && (question.QType == 1 || question.QType == 28) {
@@ -137,18 +137,18 @@ func ForwardQuery(data []byte) ([]byte, error) {
 
 	upstream_addr, err := net.ResolveUDPAddr("udp", address)
 	if err != nil {
-		return nil, fmt.Errorf("error resolving upstream: %w\n", err)
+		return nil, fmt.Errorf("error resolving upstream: %w", err)
 	}
 
 	local_conn, err := net.ListenUDP("udp", &net.UDPAddr{IP: nil, Port: 0})
 	if err != nil {
-		return nil, fmt.Errorf("error creating local socket for forward: %w\n", err)
+		return nil, fmt.Errorf("error creating local socket for forward: %w", err)
 	}
 	defer local_conn.Close()
 
 	_, err = local_conn.WriteTo(data, upstream_addr)
 	if err != nil {
-		return nil, fmt.Errorf("error writting to upstream: %w\n", err)
+		return nil, fmt.Errorf("error writting to upstream: %w", err)
 	}
 
 	buf := make([]byte, 4096)
@@ -157,7 +157,7 @@ func ForwardQuery(data []byte) ([]byte, error) {
 
 	n, _, err := local_conn.ReadFromUDP(buf)
 	if err != nil {
-		return nil, fmt.Errorf("error reading upstream response: %w\n", err)
+		return nil, fmt.Errorf("error reading upstream response: %w", err)
 	}
 
 	return buf[:n], nil

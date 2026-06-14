@@ -38,7 +38,7 @@ func (r RecordA) Serialize(ipStrs []string) ([]byte, error) {
 		// RData:
 		ip := net.ParseIP(ipStr).To4()
 		if ip == nil {
-			return nil, fmt.Errorf("invalid ipv4\n")
+			return nil, fmt.Errorf("invalid ipv4")
 		}
 		buf = append(buf, ip...)
 	}
@@ -73,7 +73,7 @@ func (r RecordAAAA) Serialize(ipStrs []string) ([]byte, error) {
 		// RData:
 		ip := net.ParseIP(ipStr).To16()
 		if ip == nil {
-			return nil, fmt.Errorf("invalid ipv6\n")
+			return nil, fmt.Errorf("invalid ipv6")
 		}
 		buf = append(buf, ip...)
 	}
