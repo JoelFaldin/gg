@@ -61,7 +61,7 @@ func ParseMessage(data []byte, store *store.Store, connection *net.UDPConn, addr
 	}
 
 	if err != nil {
-		fmt.Println("error while serializing", err)
+		customLogger.Error(fmt.Sprintf("Error while serializing: %v", err))
 	}
 
 	// Prepare response header:
@@ -90,9 +90,9 @@ func ParseMessage(data []byte, store *store.Store, connection *net.UDPConn, addr
 	response = append(response, questionBytes...)
 	response = append(response, answerBytes...)
 
-	return response, nil
+	customLogger.Debug("Record found on yaml!")
 
-	// fmt.Printf("client searches %s -> IP in yaml: %s\n", q.QName, ip)
+	return response, nil
 }
 
 func parseHeader(header []byte) Header {
@@ -162,11 +162,15 @@ func extractIp(res []byte, q Question) (string, error) {
 func forwardAndCache(data []byte, question Question, store *store.Store) ([]byte, error) {
 	res, err := forwardQuery(data)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Failed to forward query: %w", err)
 	}
 
 	extractedIp, err := extractIp(res, question)
-	if err == nil && extractedIp != "" {
+	if err != nil {
+		return nil, fmt.Errorf("Failed to extract IP for %s: %v", question.QName, err)
+	}
+
+	if extractedIp != "" {
 		go store.WriteToYaml(question.QName, extractedIp, question.QType)
 	}
 

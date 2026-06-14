@@ -30,11 +30,11 @@ func (s *Server) Run() {
 		}
 
 		if n < 12 {
-			fmt.Printf("paquete mal formateado o muy corto recibido desde %s\n", addr)
+			customLogger.Warn(fmt.Sprintf("Poorly formatted or very short packet received from %s", addr))
 			continue
 		}
 
-		customLogger.Info(fmt.Sprintf("Bytes enviados: %d", n))
+		customLogger.Info(fmt.Sprintf("Bytes sent: %d", n))
 
 		// Pass buf[:n], only used bytes
 		go s.handle(buf[:n], addr, s.conn, s.store)
@@ -42,15 +42,18 @@ func (s *Server) Run() {
 }
 
 func (s *Server) handle(buf []byte, addr *net.UDPAddr, conn *net.UDPConn, store *store.Store) {
+	customLogger := logger.CustomLogger()
+
 	res, err := parser.ParseMessage(buf, store, conn, addr)
 	if err != nil {
+		customLogger.Error(err.Error())
 		return
 	}
 
 	if len(res) > 0 {
 		_, err := conn.WriteToUDP(res, addr)
 		if err != nil {
-			fmt.Printf("Error processing %s: %v\n", addr, err)
+			customLogger.Error(fmt.Sprintf("Error processing %s: %v", addr, err))
 		}
 	}
 }

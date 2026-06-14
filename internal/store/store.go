@@ -18,12 +18,14 @@ type Store struct {
 var fileMutex sync.Mutex
 
 func LoadConfig(filePath string) (model.Data, error) {
+	customLogger := logger.CustomLogger()
+
 	var data model.Data
 
 	file, err := os.ReadFile(filePath)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-			fmt.Println("Config file not found")
+			customLogger.Warn("Data file not found, make sure .env has a valid path to yaml")
 			return data, nil
 		}
 
@@ -69,6 +71,8 @@ func (s *Store) WriteToYaml(domain string, ip_string string, questionType uint16
 	fileMutex.Lock()
 	defer fileMutex.Unlock()
 
+	customLogger := logger.CustomLogger()
+
 	if ip_string == "" {
 		return nil
 	}
@@ -91,7 +95,7 @@ func (s *Store) WriteToYaml(domain string, ip_string string, questionType uint16
 		}
 		record.IPv6 = ip_string
 	default:
-		fmt.Println("resource not supported (yet!)")
+		customLogger.Warn("Resource not supported (yet!)")
 		return nil
 	}
 
@@ -111,8 +115,7 @@ func (s *Store) WriteToYaml(domain string, ip_string string, questionType uint16
 		return err
 	}
 
-	customLogger := logger.CustomLogger()
-	customLogger.Info(fmt.Sprintf("[Store] %s saved on YAML!", domain))
+	customLogger.Debug(fmt.Sprintf("[Store] %s saved on YAML!", domain))
 
 	return nil
 }

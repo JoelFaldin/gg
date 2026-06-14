@@ -1,6 +1,8 @@
 package config
 
 import (
+	"fmt"
+	"gg/internal/logger"
 	"log"
 	"os"
 	"strconv"
@@ -10,7 +12,8 @@ func GetPort() int {
 	p := os.Getenv("PORT")
 	port, err := strconv.Atoi(p)
 	if err != nil {
-		log.Fatal("Conversion failed:", err)
+		customLogger := logger.CustomLogger()
+		customLogger.Error(fmt.Sprintf("Port conversion failed: %v", err))
 	}
 
 	if port == 0 {

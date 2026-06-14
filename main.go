@@ -6,7 +6,6 @@ import (
 	"gg/internal/logger"
 	"gg/internal/server"
 	"gg/internal/store"
-	"log"
 	"net"
 
 	"github.com/joho/godotenv"
@@ -19,7 +18,7 @@ func main() {
 	// Load env variables:
 	err := godotenv.Load(".env")
 	if err != nil {
-		log.Fatal("Error loading env file:", err)
+		customLogger.Error(fmt.Sprintf("Error loading env file: %v", err))
 	}
 
 	port := config.GetPort()
@@ -27,7 +26,7 @@ func main() {
 	addr := net.UDPAddr{Port: port}
 	conn, err := net.ListenUDP("udp", &addr)
 	if err != nil {
-		log.Fatal(err)
+		customLogger.Error(fmt.Sprintf("Error starting app: %v", err))
 	}
 	defer conn.Close()
 
@@ -36,7 +35,7 @@ func main() {
 	file := config.GetFile()
 	config, err := store.LoadConfig(file)
 	if err != nil {
-		log.Fatalf("couldnt load data.yaml: %v", err)
+		customLogger.Error("Coul not load data.yaml: %v", err)
 	}
 
 	store := store.NewStore(config)
