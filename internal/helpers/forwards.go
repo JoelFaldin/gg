@@ -70,6 +70,9 @@ func extractAnswer(res []byte, q model.Question) (model.Answer, error) {
 				addr := netip.AddrFrom4([4]byte(rData))
 				ipStr = addr.String()
 			}
+		case 5:
+			offset += rdLength
+			continue
 		case 28:
 			if rdLength == 16 {
 				addr := netip.AddrFrom16([16]byte(rData))
@@ -91,7 +94,7 @@ func extractAnswer(res []byte, q model.Question) (model.Answer, error) {
 
 func skipDomainName(data []byte, initialOffset int) (int, error) {
 	offset := initialOffset
-	if offset < len(data) {
+	for offset < len(data) {
 		// Extra check to prevent out of bounds errors:
 		if offset > len(data) {
 			return 0, fmt.Errorf("Unexpected end of data while skipping name")
@@ -125,7 +128,7 @@ func ForwardAndCache(data []byte, question model.Question, store *store.Store) (
 		return nil, fmt.Errorf("Failed to extract answer from remote: %w", err)
 	}
 
-	if len(answer.IP) == 0 && (question.QType == 1 || question.QType == 28) {
+	if len(answer.IP) != 0 && (question.QType == 1 || question.QType == 28) {
 		go store.WriteToYaml(question.QName, answer.IP, question.QType)
 	}
 
