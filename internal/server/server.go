@@ -2,9 +2,9 @@ package server
 
 import (
 	"fmt"
-	"gg/internal/logger"
 	"gg/internal/parser"
 	"gg/internal/store"
+	"log/slog"
 	"net"
 )
 
@@ -19,8 +19,6 @@ func StartServer(conn *net.UDPConn, store *store.Store) *Server {
 
 // Execute the core loop of the server. Read incoming request into a 512-sized slice
 func (s *Server) Run() {
-	customLogger := logger.CustomLogger()
-
 	for {
 		buf := make([]byte, 4096)
 
@@ -30,11 +28,11 @@ func (s *Server) Run() {
 		}
 
 		if n < 12 {
-			customLogger.Warn(fmt.Sprintf("Poorly formatted or very short packet received from %s", addr))
+			slog.Warn(fmt.Sprintf("Poorly formatted or very short packet received from %s", addr))
 			continue
 		}
 
-		customLogger.Debug(fmt.Sprintf("Bytes sent: %d", n))
+		slog.Debug(fmt.Sprintf("Bytes sent: %d", n))
 
 		// Pass buf[:n], only used bytes
 		go s.handle(buf[:n], addr, s.conn, s.store)
@@ -42,18 +40,18 @@ func (s *Server) Run() {
 }
 
 func (s *Server) handle(buf []byte, addr *net.UDPAddr, conn *net.UDPConn, store *store.Store) {
-	customLogger := logger.CustomLogger()
-
-	res, err := parser.ParseMessage(buf, store, conn, addr)
+	res, question, err := parser.ParseMessage(buf, store, conn, addr)
 	if err != nil {
-		customLogger.Error(err.Error())
+		slog.Error(err.Error())
 		return
 	}
 
 	if len(res) > 0 {
 		_, err := conn.WriteToUDP(res, addr)
 		if err != nil {
-			customLogger.Error(fmt.Sprintf("Error processing %s: %v", addr, err))
+			slog.Error(fmt.Sprintf("Error processing %s: %v", addr, err))
 		}
+
+		slog.Info(fmt.Sprintf("Success: %s", question.QName))
 	}
 }

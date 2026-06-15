@@ -1,19 +1,30 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"gg/internal/config"
 	"gg/internal/logger"
 	"gg/internal/server"
 	"gg/internal/store"
+	"log/slog"
 	"net"
 
 	"github.com/joho/godotenv"
 )
 
 func main() {
+	// Flags:
+	verbose := flag.Bool("verbose", false, "enable verbose (debug) logging")
+	flag.Parse()
+
 	// Init logger:
-	customLogger := logger.CustomLogger()
+	logLevel := slog.LevelInfo
+	if *verbose {
+		logLevel = slog.LevelDebug
+	}
+	customLogger := logger.CustomLogger(logLevel)
+	slog.SetDefault(customLogger)
 
 	// Load env variables:
 	err := godotenv.Load(".env")

@@ -18,15 +18,16 @@ const (
 )
 
 type ColorHandler struct {
-	out io.Writer
+	out   io.Writer
+	level slog.Level
 }
 
-func NewColorHandler(out io.Writer) *ColorHandler {
-	return &ColorHandler{out: out}
+func NewColorHandler(out io.Writer, level slog.Level) *ColorHandler {
+	return &ColorHandler{out: out, level: level}
 }
 
 func (h *ColorHandler) Enabled(_ context.Context, level slog.Level) bool {
-	return true
+	return level >= h.level
 }
 
 func (h *ColorHandler) Handle(_ context.Context, r slog.Record) error {
@@ -65,7 +66,7 @@ func (h *ColorHandler) WithGroup(name string) slog.Handler {
 	return h
 }
 
-func CustomLogger() *slog.Logger {
-	customHandler := NewColorHandler(os.Stdout)
+func CustomLogger(level slog.Level) *slog.Logger {
+	customHandler := NewColorHandler(os.Stdout, level)
 	return slog.New(customHandler)
 }

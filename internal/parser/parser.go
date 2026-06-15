@@ -4,10 +4,10 @@ import (
 	"encoding/binary"
 	"fmt"
 	"gg/internal/helpers"
-	"gg/internal/logger"
 	"gg/internal/model"
 	"gg/internal/records"
 	"gg/internal/store"
+	"log/slog"
 	"net"
 	"strings"
 )
@@ -21,11 +21,9 @@ type Header struct {
 	ARCount uint16
 }
 
-func ParseMessage(data []byte, store *store.Store, connection *net.UDPConn, addr *net.UDPAddr) ([]byte, error) {
-	customLogger := logger.CustomLogger()
-
+func ParseMessage(data []byte, store *store.Store, connection *net.UDPConn, addr *net.UDPAddr) ([]byte, model.Question, error) {
 	q := parseBody(data[12:])
-	customLogger.Debug(fmt.Sprintf("Type: %d", q.QType))
+	slog.Debug(fmt.Sprintf("Type: %d", q.QType))
 
 	ip, exists := store.SearchDomain(q.QName)
 
@@ -54,7 +52,7 @@ func ParseMessage(data []byte, store *store.Store, connection *net.UDPConn, addr
 	}
 
 	if err != nil {
-		customLogger.Error(fmt.Sprintf("Error while serializing: %v", err))
+		slog.Error(fmt.Sprintf("Error while serializing: %v", err))
 	}
 
 	// Prepare response header:
@@ -83,9 +81,9 @@ func ParseMessage(data []byte, store *store.Store, connection *net.UDPConn, addr
 	response = append(response, questionBytes...)
 	response = append(response, answerBytes...)
 
-	customLogger.Debug("Record found on yaml!")
+	slog.Debug("Record found on yaml!")
 
-	return response, nil
+	return response, q, nil
 }
 
 func parseHeader(header []byte) Header {

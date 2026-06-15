@@ -3,8 +3,8 @@ package store
 import (
 	"errors"
 	"fmt"
-	"gg/internal/logger"
 	"gg/internal/model"
+	"log/slog"
 	"os"
 	"sync"
 
@@ -18,14 +18,12 @@ type Store struct {
 var fileMutex sync.Mutex
 
 func LoadConfig(filePath string) (model.Data, error) {
-	customLogger := logger.CustomLogger()
-
 	var data model.Data
 
 	file, err := os.ReadFile(filePath)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-			customLogger.Warn("Data file not found, make sure .env has a valid path to yaml")
+			slog.Warn("Data file not found, make sure .env has a valid path to yaml")
 			return data, nil
 		}
 
@@ -71,8 +69,6 @@ func (s *Store) WriteToYaml(domain string, ips []string, questionType uint16) er
 	fileMutex.Lock()
 	defer fileMutex.Unlock()
 
-	customLogger := logger.CustomLogger()
-
 	if len(ips) == 0 {
 		return nil
 	}
@@ -89,7 +85,7 @@ func (s *Store) WriteToYaml(domain string, ips []string, questionType uint16) er
 	case 28:
 		record.IPv6 = ips
 	default:
-		customLogger.Warn("Resource not supported (yet!)")
+		slog.Warn("Resource not supported (yet!)")
 		return nil
 	}
 
@@ -109,7 +105,7 @@ func (s *Store) WriteToYaml(domain string, ips []string, questionType uint16) er
 		return err
 	}
 
-	customLogger.Debug(fmt.Sprintf("[Store] %s saved on YAML!", domain))
+	slog.Debug(fmt.Sprintf("[Store] %s saved on YAML!", domain))
 
 	return nil
 }

@@ -117,22 +117,22 @@ func skipDomainName(data []byte, initialOffset int) (int, error) {
 	return 0, fmt.Errorf("Domain name did not terminate properly")
 }
 
-func ForwardAndCache(data []byte, question model.Question, store *store.Store) ([]byte, error) {
+func ForwardAndCache(data []byte, question model.Question, store *store.Store) ([]byte, model.Question, error) {
 	res, err := ForwardQuery(data)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to forward query: %w", err)
+		return nil, question, fmt.Errorf("Failed to forward query: %w", err)
 	}
 
 	answer, err := extractAnswer(res, question)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to extract answer from remote: %w", err)
+		return nil, question, fmt.Errorf("Failed to extract answer from remote: %w", err)
 	}
 
 	if len(answer.IP) != 0 && (question.QType == 1 || question.QType == 28) {
 		go store.WriteToYaml(question.QName, answer.IP, question.QType)
 	}
 
-	return res, nil
+	return res, question, nil
 }
 
 func ForwardQuery(data []byte) ([]byte, error) {
