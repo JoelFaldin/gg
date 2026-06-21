@@ -129,7 +129,7 @@ func ForwardAndCache(data []byte, question model.Question, store *store.Store) (
 	}
 
 	if len(answer.IP) != 0 && (question.QType == 1 || question.QType == 28) {
-		go store.WriteToYaml(question.QName, answer.IP, question.QType)
+		go store.WriteToYaml(question.QName, answer.IP, question.QType, int(answer.TTL))
 	}
 
 	return res, question, nil

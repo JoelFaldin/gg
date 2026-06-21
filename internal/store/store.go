@@ -48,6 +48,7 @@ func NewStore(data model.Data) *Store {
 		newAddress := model.Address{
 			IPv4: v.IPv4,
 			IPv6: v.IPv6,
+			TTL:  v.TTL,
 		}
 
 		s.Data[k] = newAddress
@@ -65,7 +66,8 @@ func (s *Store) SearchDomain(domain string) (model.Address, bool) {
 	return d, true
 }
 
-func (s *Store) WriteToYaml(domain string, ips []string, questionType uint16) error {
+func (s *Store) WriteToYaml(domain string, ips []string, questionType uint16, ttl int) error {
+	fmt.Println(ttl)
 	fileMutex.Lock()
 	defer fileMutex.Unlock()
 
@@ -88,6 +90,8 @@ func (s *Store) WriteToYaml(domain string, ips []string, questionType uint16) er
 		slog.Warn("Resource not supported (yet!)")
 		return nil
 	}
+
+	record.TTL = ttl
 
 	s.Data[domain] = record
 

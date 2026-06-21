@@ -1,6 +1,7 @@
 package model
 
 type Address struct {
+	TTL  int      `yaml:"ttl,omitempty"`
 	IPv4 []string `yaml:"ipv4,omitempty"`
 	IPv6 []string `yaml:"ipv6,omitempty"`
 }
