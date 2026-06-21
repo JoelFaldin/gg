@@ -14,7 +14,7 @@ type DNSRecord interface {
 type RecordA struct{}
 
 func (r RecordA) Type() uint16 { return 1 }
-func (r RecordA) Serialize(ipStrs []string) ([]byte, error) {
+func (r RecordA) Serialize(ipStrs []string, ttl uint32) ([]byte, error) {
 	buf := make([]byte, 0, 16*len(ipStrs))
 
 	for _, ipStr := range ipStrs {
@@ -28,9 +28,9 @@ func (r RecordA) Serialize(ipStrs []string) ([]byte, error) {
 		buf = append(buf, 0x00, 0x01) // 1, IN
 
 		// TTL:
-		ttl := make([]byte, 4)
-		binary.BigEndian.PutUint32(ttl, 300)
-		buf = append(buf, ttl...)
+		ttlSpace := make([]byte, 4)
+		binary.BigEndian.PutUint32(ttlSpace, ttl)
+		buf = append(buf, ttlSpace...)
 
 		// RDLength:
 		buf = append(buf, 0x00, 0x04) // 4, IPv4, 4 bytes
@@ -49,7 +49,7 @@ func (r RecordA) Serialize(ipStrs []string) ([]byte, error) {
 type RecordAAAA struct{}
 
 func (r RecordAAAA) Type() uint16 { return 28 }
-func (r RecordAAAA) Serialize(ipStrs []string) ([]byte, error) {
+func (r RecordAAAA) Serialize(ipStrs []string, ttl uint32) ([]byte, error) {
 	buf := make([]byte, 0, 16*len(ipStrs))
 
 	for _, ipStr := range ipStrs {
@@ -63,9 +63,9 @@ func (r RecordAAAA) Serialize(ipStrs []string) ([]byte, error) {
 		buf = append(buf, 0x00, 0x01)
 
 		// TTL:
-		ttl := make([]byte, 4)
-		binary.BigEndian.PutUint32(ttl, 300)
-		buf = append(buf, ttl...)
+		ttlSpace := make([]byte, 4)
+		binary.BigEndian.PutUint32(ttlSpace, ttl)
+		buf = append(buf, ttlSpace...)
 
 		// RDLength:
 		buf = append(buf, 0x00, 0x10)

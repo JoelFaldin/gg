@@ -10,6 +10,7 @@ import (
 	"log/slog"
 	"net"
 	"strings"
+	"time"
 )
 
 type Header struct {
@@ -32,21 +33,33 @@ func ParseMessage(data []byte, store *store.Store, connection *net.UDPConn, addr
 		return helpers.ForwardAndCache(data, q, store)
 	}
 
+	// If domain exists, check if its expired:
+	if exists && time.Now().After(ip.TTL) {
+		// implement function to delete
+		exists = false
+	}
+
 	// Prepare for response:
 	var answerBytes []byte
 	var err error
 
 	switch q.QType {
 	case 1:
-		if len(ip.IPv4) == 0 {
+		if !exists || len(ip.IPv4) == 0 {
 			return helpers.ForwardAndCache(data, q, store)
 		}
-		answerBytes, err = records.RecordA{}.Serialize(ip.IPv4)
+
+		ttlRemainder := time.Until(ip.TTL).Seconds()
+
+		answerBytes, err = records.RecordA{}.Serialize(ip.IPv4, uint32(ttlRemainder))
 	case 28:
-		if len(ip.IPv6) == 0 {
+		if !exists || len(ip.IPv6) == 0 {
 			return helpers.ForwardAndCache(data, q, store)
 		}
-		answerBytes, err = records.RecordAAAA{}.Serialize(ip.IPv6)
+
+		ttlRemainder := time.Until(ip.TTL).Seconds()
+
+		answerBytes, err = records.RecordAAAA{}.Serialize(ip.IPv6, uint32(ttlRemainder))
 	default:
 		return helpers.ForwardAndCache(data, q, store)
 	}
