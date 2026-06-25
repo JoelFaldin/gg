@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"gg/internal/blocklist"
 	"gg/internal/parser"
 	"gg/internal/store"
 	"log/slog"
@@ -9,12 +10,13 @@ import (
 )
 
 type Server struct {
-	conn  *net.UDPConn
-	store *store.Store
+	conn      *net.UDPConn
+	store     *store.Store
+	blocklist *blocklist.BlockStruct
 }
 
-func StartServer(conn *net.UDPConn, store *store.Store) *Server {
-	return &Server{conn: conn, store: store}
+func StartServer(conn *net.UDPConn, store *store.Store, blocklist *blocklist.BlockStruct) *Server {
+	return &Server{conn: conn, store: store, blocklist: blocklist}
 }
 
 // Execute the core loop of the server. Read incoming request into a 512-sized slice

@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"gg/internal/blocklist"
 	"gg/internal/config"
 	"gg/internal/logger"
 	"gg/internal/server"
@@ -49,8 +50,16 @@ func main() {
 		customLogger.Error(fmt.Sprintf("Could not load data.yaml: %v", err))
 	}
 
+	// Initialize store:
 	store := store.NewStore(config)
 
-	sv := server.StartServer(conn, store)
+	// Initialize blocklist:
+	bklst := blocklist.NewBlockEngine()
+	err = bklst.LoadFromFolder("./blocklists")
+	if err != nil {
+		slog.Error(fmt.Sprintf("Error loading blocking lists: %v", err))
+	}
+
+	sv := server.StartServer(conn, store, bklst)
 	sv.Run()
 }
