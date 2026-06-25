@@ -3,6 +3,7 @@ package parser
 import (
 	"encoding/binary"
 	"fmt"
+	"gg/internal/blocklist"
 	"gg/internal/helpers"
 	"gg/internal/model"
 	"gg/internal/records"
@@ -22,9 +23,16 @@ type Header struct {
 	ARCount uint16
 }
 
-func ParseMessage(data []byte, store *store.Store, connection *net.UDPConn, addr *net.UDPAddr) ([]byte, model.Question, error) {
+func ParseMessage(data []byte, store *store.Store, connection *net.UDPConn, addr *net.UDPAddr, blocker *blocklist.BlockStruct) ([]byte, model.Question, error) {
 	q := parseBody(data[12:])
 	slog.Debug(fmt.Sprintf("Type: %d", q.QType))
+
+	// Check if domain is blocked:
+	if blocker.IsBlocked(q.QName) {
+		slog.Info(fmt.Sprintf("Domain blocked: %s", q.QName))
+
+		return helpers.BuildBlockedResponse(data, q, store)
+	}
 
 	ip, exists := store.SearchDomain(q.QName)
 

@@ -42,7 +42,7 @@ func (s *Server) Run() {
 }
 
 func (s *Server) handle(buf []byte, addr *net.UDPAddr, conn *net.UDPConn, store *store.Store) {
-	res, question, err := parser.ParseMessage(buf, store, conn, addr)
+	res, question, err := parser.ParseMessage(buf, store, conn, addr, s.blocklist)
 	if err != nil {
 		slog.Error(err.Error())
 		return

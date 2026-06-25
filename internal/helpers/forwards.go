@@ -165,3 +165,54 @@ func ForwardQuery(data []byte) ([]byte, error) {
 
 	return buf[:n], nil
 }
+
+func BuildBlockedResponse(data []byte, question model.Question, store *store.Store) ([]byte, model.Question, error) {
+	header := make([]byte, 12)
+	copy(header, data[:12])
+
+	header[2] |= 0x80
+	header[3] &= 0xF0
+	header[3] |= 0x80
+
+	header[6] |= 0x00
+	header[7] = 0x01
+
+	header[8] |= 0x00
+	header[9] |= 0x00
+
+	header[10] |= 0x00
+	header[11] |= 0x00
+
+	// Question section:
+	questionEnd := 12 + question.QuestionEnd + 4
+	questionBytes := data[12:questionEnd]
+
+	// Answer section:
+	answerBytes := []byte{}
+
+	// Name:
+	answerBytes = append(answerBytes, 0xc0, 0x0c)
+
+	// Type: A (IPv4)
+	answerBytes = append(answerBytes, 0x00, 0x01)
+
+	// Class: IN (internet)
+	answerBytes = append(answerBytes, 0x00, 0x01)
+
+	// TTL:
+	answerBytes = append(answerBytes, 0x00, 0x00, 0x00, 0x3c) // 60s
+
+	// RDLength:
+	answerBytes = append(answerBytes, 0x00, 0x04)
+
+	// RData:
+	answerBytes = append(answerBytes, 0x00, 0x00, 0x00, 0x00)
+
+	res := []byte{}
+
+	res = append(res, header...)
+	res = append(res, questionBytes...)
+	res = append(res, answerBytes...)
+
+	return res, question, nil
+}
